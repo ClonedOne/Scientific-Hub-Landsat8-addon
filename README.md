@@ -2,7 +2,7 @@
 
 This program is an add-on for Serco ESA Scientific Data Hub software. 
 It allows the system to ingest Landsat 8 satellite image products performing the necessary meta-data information extraction.
-
+Once the products have been ingested users can log into the platform to access, view the relative metadata and download them.
 You can find the original code for the Scientific Data Hub at the address: https://github.com/SentinelDataHub/DataHubSystem
 
 
