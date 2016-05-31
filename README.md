@@ -20,7 +20,7 @@ sh stop.sh
 mvn package
 ```
 * move the resulting jar files from the target/ folders into the lib/ folder of your dhus installation
-* make sure the user of the dhus is the owner of the jar file
+* make sure the user of the dhus is the owner of the jar files
 * start the dhus
 ```
 sh start.sh
