@@ -1,0 +1,362 @@
+<?xml version="1.0"?>
+<!--
+  Copyright (C) 2016 Giorgio Severi
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as
+  published by the Free Software Foundation, either version 3 of the
+  License, or (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+  GNU Affero General Public License for more details.
+
+  You should have received a copy of the GNU Affero General Public License
+  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+-->
+<!DOCTYPE rdf:RDF [
+        <!ENTITY rdf  "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+        <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
+        <!ENTITY owl  "http://www.w3.org/2002/07/owl#">
+        <!ENTITY lc8  "http://www.esa.int/lc8#">
+        <!ENTITY drb  "http://www.gael.fr/drb#">
+        <!ENTITY dhus "http://www.gael.fr/dhus#">
+        ]>
+
+<rdf:RDF xmlns:owl ="&owl;"
+         xmlns:rdf ="&rdf;"
+         xmlns:rdfs="&rdfs;"
+         xmlns:drb ="&drb;"
+         xmlns:lc8  ="&lc8;"
+         xmlns:dhus="&dhus;"
+         xml:base  ="&lc8;">
+         
+<owl:Ontology rdf:about="&dhus;">
+	<rdfs:label xml:lang="en">Data Hub Service (DHuS) ontology setup for landsat-8</rdfs:label>
+</owl:Ontology>         
+
+<owl:Ontology rdf:about="&lc8;"/>
+
+
+<rdf:Description rdf:about="&lc8;product">
+	<dhus:metadataTypes rdf:parseType="Literal">
+
+		<metadataType id="format"
+			name="Format"
+			contentType="text/plain"
+			category="product">
+			<solrField name="format"
+			type="string"
+			required="true"/>
+		</metadataType>
+
+		<metadataType id="filename"
+			name="Filename"
+			contentType="text/plain"
+			category="">
+			<solrField name="filename"
+			type="string"
+			required="true"/>
+		</metadataType>
+
+		<metadataType id="platformName"
+			name="Satellite name"
+			contentType="text/plain"
+			category="platform">
+			<solrField name="platformname"
+			type="text_general"/>
+		</metadataType>
+
+		<metadataType id="satellite"
+			name="Satellite"
+			contentType="text/plain"
+			category="summary">
+		</metadataType>
+		
+		<metadataType id="date"
+			name="Date"
+			contentType="text/date+iso8601"
+			category="summary">
+        </metadataType>
+         
+         <metadataType id="creationdate"
+			name="Creation date"
+			contentType="text/date+iso8601"
+			category="product">
+           	<solrField name="creationdate"
+			type="date"/>
+         </metadataType>
+         
+		<metadataType id="beginPosition"
+			name="Sensing start"
+			contentType="text/date+iso8601"
+			category="product">
+			<solrField name="beginposition"
+			type="tdate"/>
+		</metadataType>
+
+		<metadataType id="endPosition"
+			name="Sensing stop"
+			contentType="text/date+iso8601"
+			category="product">
+			<solrField name="endposition"
+			type="tdate"/>
+		</metadataType>
+		
+		<metadataType id="GMLfootprint"
+           name="Footprint"
+           contentType="application/gml+xml"
+           category="product">
+           <solrField name="gmlfootprint"
+           type="string"/>
+        </metadataType>
+
+        <metadataType id="footprint"
+           name="JTS footprint"
+           contentType="application/jts"
+           category="product">
+           <solrField name="footprint"
+           type="location_rpt"/>
+        </metadataType>
+
+        <metadataType id="cloudCoverPercentage"
+            name="Cloud cover percentage"
+            contentType="text/plain"
+            category="product">
+            <solrField name="cloudcoverpercentage"
+            type="double"/>
+        </metadataType>
+
+        <metadataType id="instrumentName"
+           name="Instrument name"
+           contentType="text/plain"
+           category="instrument">
+        <solrField name="instrumentname"
+           type="text_general"/>
+        </metadataType>
+
+        <metadataType id="instrumentShortName"
+           name="Instrument abbreviation"
+           contentType="text/plain"
+           category="instrument">
+        <solrField name="instrumentshortname"
+           type="text_general"/>
+        </metadataType>
+
+        <metadataType id="instrument"
+           name="Instrument"
+           contentType="text/plain"
+           category="summary">
+        </metadataType>
+
+	</dhus:metadataTypes>
+</rdf:Description>
+
+<rdf:Description rdf:about="&lc8;product">
+	<dhus:support/>
+	<dhus:identifier rdf:parseType="Literal">
+	<![CDATA[
+		fn:tokenize(name (.), '\.')[1]
+	]]>
+	</dhus:identifier>
+	<dhus:metadataExtractor  rdf:parseType="Literal">
+		<![CDATA[
+		declare namespace utils="java:eu.esa.giorgio.landsat8.Landsat8Utils";
+		
+		declare function local:footprint() as xs:string*{
+            fn:data(utils:acquireFootprintString(drb:path(.), name()))
+         };
+
+        declare function local:cloudcoverage() as xs:double* {
+            fn:data(utils:acquireCloudCover(drb:path(.), name()))
+        };
+
+		declare function local:computeSizes ($path, $base as item()*) as item()*
+		{
+			for $child in $path/*
+			return
+				if ($child/@directory)
+				then
+					local:computeSizes ($child, base)
+				else
+					data($child/@size), $base
+		};
+		
+		<!-- FORMAT -->
+        <metadata queryable="format"
+             category="product"
+             name="Format"
+             type="text/plain">
+             zip
+         </metadata>,
+         
+         <!-- FILENAME -->
+		<metadata queryable="filename"
+			category=""
+			name="Filename"
+			type="text/plain">
+			{
+				name()
+			}
+		</metadata>,
+
+		<!-- SATELLITE NAME -->
+		<metadata
+			queryable="platformname"
+			category="platform" name="Satellite name" type="text/plain">
+			{
+				Landsat-8
+			}
+		</metadata>,
+
+		<metadata category="summary" name="Satellite" type="text/plain">
+			Landsat-8
+		</metadata>,		
+
+		<!-- Creation Date -->
+		<metadata 
+            category="summary" 
+            name="Date" 
+            type="text/date+iso8601">
+            {
+				utils:acquireFileDate(drb:path(.), name())
+            }            
+		</metadata>,  
+         
+		<metadata queryable="creationdate"
+            category="product" 
+            name="Creation Date" 
+            type="text/date+iso8601">
+            {
+				drb:Iso8601DateFormatter(
+                  data (utils:acquireFileDate(drb:path(.), name())),
+                   "yyyy-MM-dd'T'hh:mm:ss.SSS'Z'")
+               
+            }            
+		</metadata>,
+         
+         <!-- Sensing START -->
+         <metadata queryable="beginposition"
+            category="product"
+            name="Sensing start"
+            type="text/date+iso8601">
+            {
+				drb:Iso8601DateFormatter(
+                  data (utils:acquireSensingDate(drb:path(.), name())),
+                   "yyyy-MM-dd'T'hh:mm:ss.SSS'Z'")
+               
+            }
+         </metadata>,
+         
+         <!-- Sensing STOP -->
+         <metadata queryable="endposition"
+            category="product"
+            name="Sensing stop"
+            type="text/date+iso8601">
+            {
+				drb:Iso8601DateFormatter(
+                  data (utils:acquireSensingDate(drb:path(.), name())),
+                   "yyyy-MM-dd'T'hh:mm:ss.SSS'Z'")
+            }
+         </metadata>,
+
+         <!-- CLOUD COVER PERCENTAGE -->
+            <metadata queryable="cloudcoverpercentage"
+                category="product"
+                name="Cloud cover percentage"
+                type="text/plain">
+            {
+                local:cloudcoverage()
+            }
+         </metadata>,
+         
+         <!-- GML FOOTPRINT -->
+         <metadata
+	           queryable="GMLfootprint"
+	           category="product"
+	           name="Footprint"
+	           type="application/gml+xml">
+	              <gml:Polygon xmlns:gml="http://www.opengis.net/gml"
+	                           srsName="http://www.opengis.net/gml/srs/epsg.xml#4326">
+	                 <gml:outerBoundaryIs>
+	                    <gml:LinearRing>
+	                       <gml:coordinates>
+	                           {
+	                                utils:acquireFootprintStringGML(drb:path(.), name())
+	                            }
+	                       </gml:coordinates>
+	                    </gml:LinearRing>
+	                 </gml:outerBoundaryIs>
+	              </gml:Polygon>
+	        </metadata>,
+         
+        <!-- JTS FOOTPRINT -->
+		<metadata
+		   queryable="footprint"
+		   category="product"
+		   name="JTS footprint"
+		   type="application/jts">
+			  {
+					concat ("POLYGON ((",utils:acquireFootprintStringJTS(drb:path(.), name()),"))")
+			  }
+		</metadata>,
+
+        <!-- Product Size -->
+        <metadata queryable="size"
+            category="summary" name="Size" type="text/plain">
+         {
+            let $size := xs:double(fn:sum(local:computeSizes(., ())))
+            return
+               if ($size < 1024)
+               then
+                  concat ($size, " bytes")
+               else
+                  if (($size div 1024) < 1024)
+                  then
+                     concat (utils:formatNumber($size div 1024), " KB")
+                  else
+                     if (($size div (1024*1024)) < 1024)
+                        then concat (utils:formatNumber($size div (1024*1024)), " MB")
+                     else
+                        if (($size div (1024*1024*1024)) < 1024)
+                        then
+                           concat (utils:formatNumber($size div (1024*1024*1024)), " GB")
+                        else
+                           concat (utils:formatNumber($size div (1024*1024*1024*1024)), " TB")
+         }
+        </metadata>,
+
+    <!-- INSTRUMENT -->
+    <metadata queryable="instrumentname"
+        category="instrument"
+        name="Instrument name"
+        type="text/plain">
+        {
+            utils:acquireInstrumentName(name())
+        }
+    </metadata>,
+
+    <metadata queryable="instrumentshortname"
+        category="instrument"
+        name="Instrument abbreviation"
+        type="text/plain">
+        {
+            utils:acquireInstrumentShortName(drb:path(.), name())
+        }
+    </metadata>,
+
+    <metadata
+        category="summary"
+        name="Instrument"
+        type="text/plain">
+        {
+            utils:acquireInstrumentShortName(drb:path(.), name())
+        }
+    </metadata>
+
+	]]>
+	</dhus:metadataExtractor>
+</rdf:Description>
+
+</rdf:RDF>
